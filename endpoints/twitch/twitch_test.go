@@ -3,7 +3,6 @@ package twitch
 import (
 	"auth/cache"
 	"auth/database"
-	"auth/tokens"
 	"container/list"
 	"encoding/json"
 	"net/http"
@@ -32,7 +31,7 @@ func Test_TwitchAuth(t *testing.T) {
 	te := &Twitch{
 		Client: &ta,
 		DB:     &db,
-		AT:     tokens.New("secret"),
+		Secret: "secret",
 		RDB: &cache.InMemoryTokenStore{
 			Tokens: make(map[string]string),
 		},

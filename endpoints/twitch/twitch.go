@@ -3,19 +3,19 @@ package twitch
 import (
 	"auth/cache"
 	"auth/database"
-	"auth/tokens"
 	"encoding/json"
 	"log"
 	"net/http"
 
+	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Twitch struct {
 	Client TwitchAuth
 	DB     database.UserRepo
-	AT     *tokens.AccessToken
 	RDB    cache.TokenStore
+	Secret string
 }
 
 type AuthRequest struct {
@@ -67,18 +67,22 @@ func (t *Twitch) Authenticate(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	accessToken, err := t.AT.CreateAccessToken(userId)
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": userId,
+	})
+
+	tokenString, err := at.SignedString([]byte(t.Secret))
 	if err != nil {
 		return err
 	}
 
 	refreshToken := primitive.NewObjectID().String()
-	t.RDB.SaveTokens(ctx, accessToken, refreshToken)
+	t.RDB.SaveTokens(ctx, tokenString, refreshToken)
 	if err != nil {
 		return err
 	}
 	respBytes, err := json.Marshal(AuthResponse{
-		AccessToken:  accessToken,
+		AccessToken:  tokenString,
 		RefreshToken: refreshToken,
 	})
 	w.Write(respBytes)
