@@ -1,14 +1,13 @@
 package database
 
 import (
-	"container/list"
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type InMemoryDB struct {
-	Users *list.List
+	Users []User
 }
 
 func (db *InMemoryDB) CreateUser(ctx context.Context, tid string) (*User, error) {
@@ -16,24 +15,19 @@ func (db *InMemoryDB) CreateUser(ctx context.Context, tid string) (*User, error)
 		Id:       primitive.NewObjectID(),
 		TwitchId: tid,
 	}
-	db.Users.PushBack(u)
+	db.Users = append(db.Users, u)
 	return &u, nil
 }
 
 func (db *InMemoryDB) GetUsers(ctx context.Context, u *User) (*[]User, error) {
-	ul := list.New()
-	for e := db.Users.Front(); e != nil; e = e.Next() {
-		if e.Value.(User).TwitchId == u.TwitchId {
-			ul.PushBack(e.Value)
+	res := make([]User, len(db.Users))
+	var l int
+	for i, u := range db.Users {
+		if db.Users[i].TwitchId == u.TwitchId {
+			res[l] = u
+			l++
 		}
 	}
-
-	res := make([]User, ul.Len())
-	i := 0
-	for e := db.Users.Front(); e != nil; e = e.Next() {
-		res[i] = e.Value.(User)
-		i++
-	}
-
+	res = res[:l]
 	return &res, nil
 }

@@ -1,7 +1,6 @@
 package database
 
 import (
-	"container/list"
 	"context"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 
 func TestInMemoryDb(t *testing.T) {
 	db := InMemoryDB{
-		Users: list.New(),
+		Users: make([]User, 0),
 	}
 	u, _ := db.CreateUser(context.TODO(), "123")
 	if u.Id == primitive.NilObjectID {

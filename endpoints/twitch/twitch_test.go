@@ -3,7 +3,6 @@ package twitch
 import (
 	"auth/cache"
 	"auth/database"
-	"container/list"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -26,7 +25,7 @@ func Test_TwitchAuth(t *testing.T) {
 		},
 	}
 	db := database.InMemoryDB{
-		Users: list.New(),
+		Users: make([]database.User, 0),
 	}
 	te := &Twitch{
 		Client: &ta,
@@ -63,7 +62,7 @@ func Test_TwitchAuth(t *testing.T) {
 	if authResponse.AccessToken == "" {
 		t.Fatal("empty access_token")
 	}
-	if db.Users.Len() != 1 {
+	if len(db.Users) != 1 {
 		t.Fatal("user was not added")
 	}
 
@@ -86,7 +85,7 @@ func Test_TwitchAuth(t *testing.T) {
 	if authResponse.AccessToken == "" {
 		t.Fatal("empty access_token")
 	}
-	if db.Users.Len() != 1 {
+	if len(db.Users) != 1 {
 		t.Fatal("user was not added")
 	}
 }
