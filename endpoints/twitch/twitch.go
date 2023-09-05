@@ -38,13 +38,19 @@ func (t *Twitch) Authenticate(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if atr.Error != "" {
+	if atr.StatusCode != http.StatusOK {
+		log.Printf("error requesting twitch access token. statusCode: %d \nerror: %s \nerrorMessage: %s", atr.StatusCode, atr.Error, atr.ErrorMessage)
 		w.WriteHeader(http.StatusUnauthorized)
 		return nil
 	}
 
 	var userId string
 	_, vr, _ := t.Client.ValidateToken(atr.Data.AccessToken)
+	if vr.StatusCode != http.StatusOK {
+		log.Printf("error validating twitch access token. statusCode: %d \nerror: %s \nerrorMessage: %s", atr.StatusCode, atr.Error, atr.ErrorMessage)
+		w.WriteHeader(http.StatusUnauthorized)
+		return nil
+	}
 	existingUsers, err := t.DB.GetUsers(ctx, &database.User{TwitchId: vr.Data.UserID})
 	if err != nil {
 		return err
