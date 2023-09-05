@@ -19,11 +19,12 @@ import (
 
 func main() {
 	ctx := context.Background()
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("failed load .env file")
-	}
+
+	//loading env variables
+	godotenv.Load()
 
 	// configuring mongodb
+	log.Println("connecting db..")
 	dbUri := os.Getenv("MONGO_URI")
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbUri))
 	if err != nil {
@@ -35,6 +36,7 @@ func main() {
 	db := database.Create(client)
 
 	// configuring redis
+	log.Println("connecting rdb..")
 	rdbAddr := os.Getenv("REDIS_URI")
 	rdbClient := redis.NewClient(&redis.Options{
 		Addr:     rdbAddr,
@@ -44,6 +46,7 @@ func main() {
 	rdb := cache.RedisTokenStore{RDB: rdbClient}
 
 	// configuring twitch client
+	log.Println("configuring twitch client..")
 	twitchClientId := os.Getenv("TWITCH_CLIENT_ID")
 	twitchSecret := os.Getenv("TWITCH_SECRET")
 	twitchClient, err := helix.NewClient(&helix.Options{
@@ -66,6 +69,8 @@ func main() {
 
 	// register handlers
 	r.HandleFunc("/twitch", errorHandlingMiddleware(twitch.Authenticate)).Methods("POST")
+
+	log.Println("server starting..")
 	http.ListenAndServe(":80", r)
 }
 
