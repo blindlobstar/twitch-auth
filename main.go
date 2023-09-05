@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -20,8 +22,9 @@ import (
 func main() {
 	ctx := context.Background()
 
-	//loading env variables
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Print("failed load .env file")
+	}
 
 	// configuring mongodb
 	log.Println("connecting db..")
@@ -70,8 +73,30 @@ func main() {
 	// register handlers
 	r.HandleFunc("/twitch", errorHandlingMiddleware(twitch.Authenticate)).Methods("POST")
 
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+
 	log.Println("server starting..")
-	http.ListenAndServe(":80", r)
+	s := http.Server{
+		Addr:    ":80",
+		Handler: r,
+	}
+
+	go func() {
+		if err := s.ListenAndServe(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	log.Println("server has started!")
+
+	<-sig
+	log.Println("stopping server")
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if err := s.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func errorHandlingMiddleware(f func(w http.ResponseWriter, r *http.Request) error) func(w http.ResponseWriter, r *http.Request) {
