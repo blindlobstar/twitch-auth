@@ -1,0 +1,27 @@
+version: '3.4'
+
+services:
+  db:
+    image: mongo
+    ports:
+      - 27017:27017
+  
+  rdb:
+    image: redis
+
+  auth:
+    image: auth
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 80:80
+    environment:
+      - MONGO_URI=mongodb://db:27017
+      - REDIS_URI=redis://rdb
+      - TOKEN_SECRET=supersecretstring
+    volumes:
+      - ~/.go-secrets/auth:/.env
+    depends_on:
+      - db
+      - rdb
